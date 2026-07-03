@@ -171,26 +171,10 @@ REVIEW_CONF_THRESHOLD  = 0.80
 
 # ── Bundled reference files (shipped in the repo) ──
 # These are loaded automatically at startup so the user only uploads the INPUT file.
-# The loader is tolerant of the user's own filenames — spaces, underscores, or
-# "(1)" suffixes all work — so nothing needs renaming.
-_APP_DIR = Path(__file__).parent
-
-def _find_bundled(*patterns):
-    """Return the first repo file matching any of the given glob patterns.
-    Tries patterns in order (exact name first, then flexible wildcards)."""
-    for pat in patterns:
-        hits = sorted(_APP_DIR.glob(pat))
-        if hits:
-            return hits[0]
-    return _APP_DIR / patterns[0]   # non-existent default → .exists() is False
-
-BUNDLED_MASTER   = _find_bundled("Veterinary_Product_Master_56_COMPREHENSIVE.xlsx",
-                                 "*Master*COMPREHENSIVE*.xlsx", "*Master*.xlsx")
-BUNDLED_PRODUCTS = _find_bundled("Product_List.xlsx", "Product List.xlsx",
-                                 "*Product*List*.xlsx")
-BUNDLED_TRAINING = _find_bundled("Training_Data.xlsx", "Training Data.xlsx",
-                                 "*Training*Data*.xlsx")
-BUNDLED_PROMPT   = _find_bundled("FINAL_SYSTEM_PROMPT.txt", "FINAL_SYSTEM_PROMPT*.txt")
+_APP_DIR         = Path(__file__).parent
+BUNDLED_MASTER   = _APP_DIR / "Veterinary_Product_Master_56_COMPREHENSIVE.xlsx"
+BUNDLED_PRODUCTS = _APP_DIR / "Product_List.xlsx"
+BUNDLED_TRAINING = _APP_DIR / "Training_Data.xlsx"
 
 # AI provider definitions — all disabled by default
 AI_PROVIDERS = {
@@ -323,12 +307,13 @@ def _init_state():
     for k, v in defaults.items():
         if k not in st.session_state:
             st.session_state[k] = v
-    # Load the system prompt once at startup (tolerant of "(1)" suffix filenames)
+    # Load FINAL_SYSTEM_PROMPT.txt once at startup
     if not st.session_state["system_prompt"]:
+        _sp_path = os.path.join(os.path.dirname(__file__), "FINAL_SYSTEM_PROMPT.txt")
         try:
-            if BUNDLED_PROMPT.exists():
-                st.session_state["system_prompt"] = BUNDLED_PROMPT.read_text(encoding="utf-8")
-        except Exception:
+            with open(_sp_path, "r", encoding="utf-8") as _f:
+                st.session_state["system_prompt"] = _f.read()
+        except FileNotFoundError:
             pass  # falls back to inline string if file missing
 
 _init_state()
